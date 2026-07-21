@@ -1,0 +1,120 @@
+.teams-list {
+  display: flex;
+  flex-wrap: wrap;
+  /* justify-content: center; */
+  gap: 20px;
+  padding: 20px;
+}
+
+.project-title {
+  font-size: 26px;
+  font-weight: bold;
+  color: #415b8b;
+  margin-bottom: 15px;
+}
+
+.project-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 20px;
+  padding: 5px;
+}
+.project-info div {
+  font-size: 18px;
+  color: #333;
+  padding: 5px;
+}
+
+.team-card {
+  background-color: #f0f0f0;
+  border: 2px solid #000000;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 400px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.team-card:hover {
+  background-color: #f8f8f8;
+}
+
+.team-card .card-body {
+  padding: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.team-card .card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.whiteboard-preview {
+  height: 180px;
+  background-color: #eee;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid #ccc;
+  border-radius: 10px 10px 0 0;
+}
+
+.card-footer {
+  display: flex;
+  background-color: transparent;
+  align-items: center;
+  display: flex;
+  justify-content: space-around;
+  font-size: 0.85rem;
+  color: #0b0b0b;
+}
+
+/* .btn.btn-view,
+.btn.btn-whiteboard {
+  font-size: 0.9rem;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 4px;
+  color: #1a1a1a;
+  border: 1px solid #415b8b;
+  background-color: transparent;
+} */
+
+/* .btn-view:hover {
+  background-color: rgb(31, 33, 35);
+  color: white;
+}
+
+.btn-view:active {
+  background-color: rgb(20, 22, 24);
+  color: white;
+} */
+
+/* Whiteboard Button */
+.btn-whiteboard {
+  background-color: #5f666f; /* Blue color */
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 5px;
+  width: 45%;
+  height: 45px;
+}
+
+.btn-whiteboard:hover {
+  background-color: #3b434b; /* Darker blue */
+  color: white;
+}
+
+.btn-whiteboard:active {
+  background-color: #393e44; /* Even darker blue */
+  color: white;
+}

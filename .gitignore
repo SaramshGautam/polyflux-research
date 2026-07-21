@@ -1,0 +1,60 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.example
+app.py
+Dockerfile
+
+ai-backend/*
+ai-backend/__pycache__/
+ai-backend/ai/__pycache__/
+ai-backend/routers/__pycache__/
+ai-backend/venv/
+ai-backend/venv/*
+ai-backend/test_*.pdf
+ai-backend/chroma_data/
+backend/*
+
+shapes_dump
+venv
+venv/*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vercel
+.env
+firebase-key.json
+bot_logs_dump
+
+# --- Non-frontend files (this repo deploys to Vercel as a React/CRA app -
+# only package.json, public/, and src/ are needed for the build) ---
+
+# Python backend / local dev server artifacts
+__pycache__/
+*.pyc
+flask_session/
+environment.yml
+requirements.txt
+Procfile
+
+# One-off Node scripts used for local data export/admin, not part of the app bundle
+bot_logs.js
+download_firestore.js
+download_shapes_to_csv.js
+strip_console.tmp.js
