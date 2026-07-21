@@ -391,9 +391,6 @@ function isColorChange(prevColor, nextColor) {
   return !!prevColor && !!nextColor && prevColor !== nextColor;
 }
 
-// Backwards-compatible alias (kept in case other modules import it)
-const isSignificantChange = isSignificantTextChange;
-
 /** call on focus/selection */
 export function startEditSession({ shape, userContext }) {
   const key = shape?.id;
