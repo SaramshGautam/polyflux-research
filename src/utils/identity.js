@@ -10,36 +10,48 @@ const ls = (k) => {
   }
 };
 
+/**
+ * Resolves the current user's identity, in priority order:
+ *   1. localStorage "participantId" - the canonical key, set at login
+ *      (LoginPage.js) from the Participant ID the person typed/confirmed,
+ *      e.g. "P014". This is what should identify a person's actions
+ *      (shapes.createdBy/updatedBy, export_buffer.actor_name, etc).
+ *   2. localStorage "userDisplayName" - legacy alias some older code reads;
+ *      LoginPage.js writes both keys so either lookup works.
+ *   3. Firebase auth's displayName - also set to the participant ID at
+ *      login (see updateProfile() in LoginPage.js), so this is a solid
+ *      fallback if localStorage got cleared mid-session.
+ *   4. localStorage "userEmail" / auth email - covers teacher/admin logins,
+ *      which don't have a participant ID.
+ *   5. "Anonymous" - last resort.
+ */
 export function getActorIdentity() {
-  //   const u = auth.currentUser;
+  const u = auth.currentUser;
 
-  // Prefer what YOU control (participantQuickLogin sets these)
+  const storedParticipantId = ls("participantId") || ls("userDisplayName");
   const storedEmail = ls("userEmail").toLowerCase();
-  const storedName = ls("userDisplayName"); // participantId like P014
-  //   console.log("Stored identity:", { storedEmail, storedName });
 
-  // Fall back to auth user (Google / email-password)
-  //   const authEmail = (u?.email || "").trim().toLowerCase();
-  //   const authName = (u?.displayName || "").trim();
+  const authDisplayName = (u?.displayName || "").trim();
+  const authEmail = (u?.email || "").trim().toLowerCase();
 
-  // Pick best available
-  //   const email = storedEmail || authEmail || "";
-  const email = storedEmail || "";
-  const displayName = storedName || "";
+  const participantId = storedParticipantId || authDisplayName || "";
+  const email = storedEmail || authEmail || "";
 
-  // Stable ID: prefer email (even for anon participants, you stored it)
-  const actorId = String(email || "anon")
+  // Stable, lowercase key used anywhere we need a deterministic id
+  // (history doc ids, actor bucketing, etc). Prefer the participant ID
+  // over email/uid since that's the identity we actually want to group by.
+  const actorId = String(participantId || email || u?.uid || "anon")
     .trim()
     .toLowerCase();
 
-  // Display name: prefer participantId; else displayName; else email; else Anonymous
-  const actorName = displayName || email || "Anonymous";
+  // Human-readable identity: prefer participantId; else email; else Anonymous
+  const actorName = participantId || email || "Anonymous";
 
   return {
     actorId,
     actorName,
-    // uid: u?.uid || null,
+    participantId: participantId || null,
     email: email || null,
-    // photoURL: u?.photoURL || ls("photoURL") || null,
+    uid: u?.uid || null,
   };
 }

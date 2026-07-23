@@ -182,43 +182,43 @@ const CollaborativeWhiteboard = () => {
   }, []);
 
   // Save canvas preview to storage + Firestore when leaving
-  const saveCanvasPreview = useCallback(async () => {
-    const editor = editorInstance.current;
-    if (!editor || !className || !projectName || !teamName) return;
+  // const saveCanvasPreview = useCallback(async () => {
+  //   const editor = editorInstance.current;
+  //   if (!editor || !className || !projectName || !teamName) return;
 
-    const shapeIds = editor.getCurrentPageShapeIds();
-    if (!shapeIds || shapeIds.size === 0) return;
+  //   const shapeIds = editor.getCurrentPageShapeIds();
+  //   if (!shapeIds || shapeIds.size === 0) return;
 
-    try {
-      const { blob } = await editor.toImage([...shapeIds], {
-        format: "png",
-        padding: 20,
-        background: "white",
-      });
+  //   try {
+  //     const { blob } = await editor.toImage([...shapeIds], {
+  //       format: "png",
+  //       padding: 20,
+  //       background: "white",
+  //     });
 
-      const path = `previews/${className}/${projectName}/${teamName}.png`;
-      const imgRef = ref(storage, path);
+  //     const path = `previews/${className}/${projectName}/${teamName}.png`;
+  //     const imgRef = ref(storage, path);
 
-      await uploadBytes(imgRef, blob, { contentType: "image/png" });
-      const downloadURL = await getDownloadURL(imgRef);
+  //     await uploadBytes(imgRef, blob, { contentType: "image/png" });
+  //     const downloadURL = await getDownloadURL(imgRef);
 
-      const teamRef = doc(
-        db,
-        "classrooms",
-        className,
-        "Projects",
-        projectName,
-        "teams",
-        teamName
-      );
+  //     const teamRef = doc(
+  //       db,
+  //       "classrooms",
+  //       className,
+  //       "Projects",
+  //       projectName,
+  //       "teams",
+  //       teamName
+  //     );
 
-      await setDoc(teamRef, { previewUrl: downloadURL }, { merge: true });
+  //     await setDoc(teamRef, { previewUrl: downloadURL }, { merge: true });
 
-      console.log("✅ Canvas preview saved:", path);
-    } catch (error) {
-      console.error("Error saving canvas preview:", error);
-    }
-  }, [className, projectName, teamName]);
+  //     console.log("✅ Canvas preview saved:", path);
+  //   } catch (error) {
+  //     console.error("Error saving canvas preview:", error);
+  //   }
+  // }, [className, projectName, teamName]);
 
   function MicButton({ startRecording, stopRecording }) {
     // force rerender on a timer while recording so elapsed text updates
@@ -272,20 +272,20 @@ const CollaborativeWhiteboard = () => {
   }
 
   // Save preview on unload / unmount
-  useEffect(() => {
-    if (!editorReady) return;
-    if (!className || !projectName || !teamName) return;
+  // useEffect(() => {
+  //   if (!editorReady) return;
+  //   if (!className || !projectName || !teamName) return;
 
-    const handleBeforeUnload = () => {
-      saveCanvasPreview();
-    };
+  //   const handleBeforeUnload = () => {
+  //     saveCanvasPreview();
+  //   };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      saveCanvasPreview();
-    };
-  }, [editorReady, className, projectName, teamName, saveCanvasPreview]);
+  //   window.addEventListener("beforeunload", handleBeforeUnload);
+  //   return () => {
+  //     window.removeEventListener("beforeunload", handleBeforeUnload);
+  //     saveCanvasPreview();
+  //   };
+  // }, [editorReady, className, projectName, teamName, saveCanvasPreview]);
 
   // elapsed recording timer
   useEffect(() => {
@@ -582,21 +582,21 @@ const CollaborativeWhiteboard = () => {
         );
       },
 
-      InFrontOfTheCanvas: (props) => (
-        <>
-          <ContextToolbarComponent
-            {...props}
-            userRole={userRoleRef.current}
-            selectedShape={selectedShapeRef.current}
-            setShapeReactions={setShapeReactions}
-            shapeReactions={shapeReactionsRef.current}
-            commentCounts={commentCountsRef.current}
-            addComment={addCommentStable}
-            setActionHistory={setActionHistory}
-            fetchActionHistory={fetchActionHistory}
-          />
-        </>
-      ),
+      // InFrontOfTheCanvas: (props) => (
+      //   <>
+      //     <ContextToolbarComponent
+      //       {...props}
+      //       userRole={userRoleRef.current}
+      //       selectedShape={selectedShapeRef.current}
+      //       setShapeReactions={setShapeReactions}
+      //       shapeReactions={shapeReactionsRef.current}
+      //       commentCounts={commentCountsRef.current}
+      //       addComment={addCommentStable}
+      //       setActionHistory={setActionHistory}
+      //       fetchActionHistory={fetchActionHistory}
+      //     />
+      //   </>
+      // ),
 
       Toolbar: (props) => {
         const editor = useEditor();
@@ -699,9 +699,9 @@ const CollaborativeWhiteboard = () => {
           onMount={(editor) => {
             editorInstance.current = editor;
             setEditorReady(true);
-            if (editorInstance) {
-              saveCanvasPreview();
-            }
+            // if (editorInstance) {
+            //   saveCanvasPreview();
+            // }
             if (isDemoRoom(className, projectName)) {
               seedDemoBoardIfEmpty(editor);
             }

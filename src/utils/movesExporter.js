@@ -175,9 +175,15 @@ export function mapHistoryToMove(h, shapesMap) {
           .filter(Boolean)
   ).slice(0, 6); // keep tidy
 
+  // history docs carry the participant identity as `displayName` (see
+  // logAction()/endEditSession() in utils/registershapes.js); export_buffer
+  // docs carry it as `actor_name` directly. Prefer whichever is present.
+  const actorName = h.actor_name || h.displayName || h.userId || null;
+
   const move = {
     text: h.text || contentText || "",
     actor: typeof h.actor === "number" ? h.actor : 0,
+    actor_name: actorName,
     timestamp: isoTimestamp(h.timestamp || h.createdAt),
     action: (h.action || "edit").toLowerCase(),
     itemType,

@@ -282,7 +282,6 @@ const ContextToolbarComponent = track(
             // position: "relative", ////////////////////////////////
           }}
         >
-          {/* Comment Section */}
           <div
             style={{
               display: "flex",
@@ -373,7 +372,6 @@ const ContextToolbarComponent = track(
           </div>
         </div>
 
-        {/* Render the CommentBox when the state is true */}
         {showCommentBox && (
           <CommentBox
             selectedShape={selectedShape}

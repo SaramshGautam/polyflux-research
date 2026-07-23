@@ -20,6 +20,34 @@ import {
 import { db, storage } from "../firebaseConfig";
 import { getActorIdentity } from "../utils/identity";
 
+/**
+ * Resolves who's performing an action, preferring the participantId that
+ * was threaded through userContext (see CustomContextMenu.js, which sets
+ * this from getActorIdentity() once per render) over a fresh
+ * getActorIdentity() lookup. This keeps a single participant identity
+ * consistent across a whole registerShape/scheduleUpdateShape/deleteShape
+ * call, and makes it the value that ends up in shapes.createdBy/updatedBy
+ * and export_buffer.actor_name.
+ *
+ * @param {Object} userContext
+ * @param {string} [fallbackId] - explicit id passed by the caller, if any
+ * @param {string} [fallbackName] - explicit display name passed by the caller, if any
+ */
+function resolveIdentity(userContext = {}, fallbackId, fallbackName) {
+  const identity = getActorIdentity();
+  const id =
+    userContext.participantId ||
+    fallbackId ||
+    userContext.userId ||
+    identity.actorId;
+  const name =
+    userContext.participantId ||
+    userContext.displayName ||
+    fallbackName ||
+    identity.actorName;
+  return { id, name };
+}
+
 function scheduleImageUrlBackfill({ editor, userContext, shapeId, assetId }) {
   // Try a few times, spaced out
   const MAX_TRIES = 5;
@@ -231,7 +259,7 @@ export async function registerShape(newShape, userContext, editor) {
   if (!newShape || !userContext) return;
 
   const { id: shapeID, type: shapeType, x, y, props } = newShape;
-  const { className, projectName, teamName, userId } = userContext;
+  const { className, projectName, teamName } = userContext;
 
   if (!shapeID || !shapeType || !className || !projectName || !teamName) return;
 
@@ -247,7 +275,7 @@ export async function registerShape(newShape, userContext, editor) {
     shapeID
   );
 
-  const { actorId, actorName } = getActorIdentity();
+  const { id: actorId, name: actorName } = resolveIdentity(userContext);
 
   let finalImageUrl = null;
 
@@ -335,7 +363,7 @@ export async function registerShape(newShape, userContext, editor) {
   const move = buildMoveFromShape({
     action: "added",
     shape: newShape,
-    userId,
+    participantId: actorName,
     ts: new Date().toISOString(),
     overrideUrl: finalImageUrl || undefined,
   });
@@ -475,7 +503,7 @@ export async function scheduleUpdateShape(shape, userContext) {
     if (!snap.exists()) {
       return;
     }
-    const { actorId, actorName } = getActorIdentity();
+    const { id: actorId, name: actorName } = resolveIdentity(userContext);
 
     await updateDoc(shapeRef, {
       ...updatePayload,
@@ -546,6 +574,11 @@ export async function endEditSession({
 
   // Single history + single export move (batch for atomicity)
   const { className, projectName, teamName } = userContext;
+  const { id: actorId, name: actorName } = resolveIdentity(
+    userContext,
+    userId,
+    displayName
+  );
   const batch = writeBatch(db);
 
   const dx = moved ? (nextPos.x ?? 0) - (prevPos.x ?? 0) : 0;
@@ -553,7 +586,7 @@ export async function endEditSession({
 
   // history doc
   const cleanAction = "updated";
-  const historyId = `${userId}_${cleanAction}_${key}_${Date.now()}`;
+  const historyId = `${actorId}_${cleanAction}_${key}_${Date.now()}`;
   const historyRef = doc(
     db,
     `classrooms/${className}/Projects/${projectName}/teams/${teamName}/history/${historyId}`
@@ -561,8 +594,8 @@ export async function endEditSession({
   batch.set(historyRef, {
     action: "updated",
     timestamp: serverTimestamp(),
-    userId,
-    displayName: displayName || "",
+    userId: actorId,
+    displayName: actorName || "",
     shapeId: key,
     shapeType: shape?.type || "unknown",
     _session_dwell_ms: durationMs,
@@ -577,7 +610,7 @@ export async function endEditSession({
   const move = buildMoveFromShape({
     action: "updated",
     shape,
-    userId,
+    participantId: actorName,
     ts: new Date().toISOString(),
   });
   move.micro = {
@@ -690,6 +723,12 @@ export async function endSelectionSession({
   const { className, projectName, teamName } = userContext || {};
   if (!className || !projectName || !teamName) return false;
 
+  const { id: actorId, name: actorName } = resolveIdentity(
+    userContext,
+    userId,
+    displayName
+  );
+
   const liveShape = shape || {};
   const dx = (liveShape.x ?? ses.startPos.x ?? 0) - (ses.startPos.x ?? 0);
   const dy = (liveShape.y ?? ses.startPos.y ?? 0) - (ses.startPos.y ?? 0);
@@ -697,7 +736,7 @@ export async function endSelectionSession({
   ensureFlushTimer();
 
   // Queued, not written immediately -- see the buffered-writer note above.
-  const historyId = `${userId}_selected_${key}_${Date.now()}`;
+  const historyId = `${actorId}_selected_${key}_${Date.now()}`;
   const historyRef = doc(
     db,
     `classrooms/${className}/Projects/${projectName}/teams/${teamName}/history/${historyId}`
@@ -705,8 +744,8 @@ export async function endSelectionSession({
   queueWrite(historyRef, {
     action: "selected",
     timestamp: serverTimestamp(),
-    userId,
-    displayName: displayName || "",
+    userId: actorId,
+    displayName: actorName || "",
     shapeId: key,
     shapeType: liveShape?.type || "unknown",
     _session_dwell_ms: dwellMs,
@@ -715,7 +754,7 @@ export async function endSelectionSession({
   const move = buildMoveFromShape({
     action: "selected",
     shape: liveShape,
-    userId,
+    participantId: actorName,
     ts: new Date().toISOString(),
   });
   move.micro = {
@@ -751,7 +790,8 @@ export async function deleteShape(shapeID, userContext) {
     return;
   }
   // const { id: shapeID, type: shapeType } = newShape;
-  const { className, projectName, teamName, userId, displayName } = userContext;
+  const { className, projectName, teamName } = userContext;
+  const { id: actorId, name: actorName } = resolveIdentity(userContext);
 
   try {
     // Firestore document reference
@@ -776,18 +816,14 @@ export async function deleteShape(shapeID, userContext) {
     await updateDoc(shapeRef, {
       isDeleted: true,
       deletedAt: serverTimestamp(),
-      deletedBy: displayName,
+      deletedBy: actorName,
     });
-
-    const { actorId, actorName } = getActorIdentity();
 
     await logAction(
       userContext,
       `deleted`,
       actorId,
       actorName,
-      // userId,
-      // displayName,
       shapeID,
       "unknown"
     );
@@ -795,7 +831,7 @@ export async function deleteShape(shapeID, userContext) {
     const move = buildMoveFromShape({
       action: "deleted",
       shape: { id: shapeID, type: "unknown", props: {} },
-      userId,
+      participantId: actorName,
       ts: new Date().toISOString(),
     });
     await appendMoveToExportBuffer({ ...userContext, move });
@@ -880,12 +916,13 @@ export async function upsertImageUrl(userContext, shapeId, urlOrProps) {
   return finalUrl;
 }
 
-/** Convert a userId into a small actor index (0/1/2...) deterministically. */
-function actorIndex(userId) {
+/** Convert a participantId into a small actor index (0/1/2...) deterministically. */
+function actorIndex(participantId) {
   // Stable but simple hash → small bucket
+  const s = participantId || "";
   let h = 0;
-  for (let i = 0; i < (userId || "").length; i++) {
-    h = (h * 31 + userId.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
   }
   return h % 3; // 0..2
 }
@@ -928,7 +965,7 @@ export async function appendMoveToExportBuffer({
 export function buildMoveFromShape({
   action,
   shape,
-  userId,
+  participantId,
   ts = new Date().toISOString(),
   overrideUrl,
 }) {
@@ -955,7 +992,12 @@ export function buildMoveFromShape({
 
   return {
     text: text || `${a} ${shapeType}`,
-    actor: actorIndex(userId),
+    // Numeric bucket kept for existing linkograph-style actor swimlanes,
+    // but now hashed from the real participant ID instead of a random
+    // anonymous-auth uid, so it's stable per participant across sessions.
+    actor: actorIndex(participantId),
+    // The actual identifier: the Participant ID entered at login.
+    actor_name: participantId || "Anonymous",
     timestamp: t,
     action: a,
     itemType: shapeType,

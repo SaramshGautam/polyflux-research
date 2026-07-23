@@ -205,6 +205,16 @@ const LoginPage = () => {
         displayName: pid,
       });
 
+      // Persist the confirmed Participant ID so it can be threaded through
+      // userContext everywhere shapes/comments/export_buffer moves get
+      // written (see utils/identity.js -> getActorIdentity()). This is the
+      // real identifier for the person taking actions on the canvas, not
+      // the anonymous Firebase uid. "userDisplayName" is kept as a legacy
+      // alias for any older code paths still reading that key.
+      localStorage.setItem("participantId", pid);
+      localStorage.setItem("userDisplayName", pid);
+      localStorage.setItem("userEmail", primaryEmail);
+
       if (assignments.length === 1) {
         const a = assignments[0];
 

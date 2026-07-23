@@ -48,16 +48,18 @@ export default function CustomContextMenu({
 }) {
   const editor = useEditor();
   const currentUser = auth.currentUser;
-  const userIdFromAuth = (currentUser?.email || currentUser?.uid || "anon")
-    .trim()
-    .toLowerCase(); // ✅ stable
 
-  const displayName = (
-    localStorage.getItem("displayName") ||
-    currentUser?.displayName ||
-    currentUser?.email ||
-    "Anonymous"
-  ).trim();
+  // Canonical identity for this session: getActorIdentity() resolves the
+  // Participant ID entered at login (see LoginPage.js -> localStorage
+  // "participantId"), falling back to Firebase auth's displayName/email.
+  // This is threaded through every userContext below so shapes'
+  // createdBy/updatedBy, history docs, and export_buffer moves all get
+  // stamped with the real participant identity instead of a random
+  // anonymous-auth uid.
+  const { actorId, actorName, participantId } = getActorIdentity();
+
+  const userIdFromAuth = actorId; // stable id (participant ID when available)
+  const displayName = actorName; // human-readable (participant ID when available)
 
   const [showCommentBox, setShowCommentBox] = useState(false);
   // const [comments, setComments] = useState({});
@@ -257,8 +259,6 @@ export default function CustomContextMenu({
 
     clearTimeout(ses.idleTimer);
 
-    const { actorId, actorName } = getActorIdentity();
-
     const didCommit = await endEditSession({
       shape,
       userContext,
@@ -449,9 +449,8 @@ export default function CustomContextMenu({
       teamName,
       userId: userIdFromAuth,
       displayName,
+      participantId,
     };
-
-    const { actorId, actorName } = getActorIdentity();
 
     const unlisten = editor.store.listen(
       async (e) => {
@@ -531,6 +530,7 @@ export default function CustomContextMenu({
         teamName,
         userId: userIdFromAuth,
         displayName: displayName,
+        participantId,
       };
 
       newlyCreatedRef.current.add(newShape.id);
@@ -585,6 +585,7 @@ export default function CustomContextMenu({
         teamName,
         userId: userIdFromAuth,
         displayName: displayName,
+        participantId,
       };
 
       await deleteShape(deletedShapeID.id, userContext);
@@ -639,6 +640,7 @@ export default function CustomContextMenu({
           teamName,
           userId: userIdFromAuth,
           displayName: displayName,
+          participantId,
         };
 
         // --- session-based update ---
@@ -677,9 +679,8 @@ export default function CustomContextMenu({
           teamName,
           userId: userIdFromAuth,
           displayName: displayName,
+          participantId,
         };
-
-        const { actorId, actorName } = getActorIdentity();
 
         // newly selected ids -> start a click/select session
         for (const enteredId of curr) {
@@ -729,15 +730,13 @@ export default function CustomContextMenu({
             getSelectedShapeSafe(lastEditingId) ||
             editor.getShape(lastEditingId);
           if (shape) {
-            const userId = auth.currentUser
-              ? auth.currentUser.displayName
-              : "anon";
             const userContext = {
               className,
               projectName,
               teamName,
               userId: userIdFromAuth,
               displayName: displayName,
+              participantId,
             };
             endSessionIfAny(shape, userContext, userIdFromAuth);
           }
